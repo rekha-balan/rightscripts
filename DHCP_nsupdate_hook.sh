@@ -2,7 +2,9 @@
 
 # ---
 # RightScript Name: DHCP nsupdate hook
-# Description: Adds a DHCP hook to update DNS using nsupdate (azure dhcp does not register names in DNS) https://docs.microsoft.com/en-us/azure/virtual-network/virtual-networks-name-resolution-ddns
+# Description: >
+#   Adds a DHCP hook to update DNS using nsupdate (azure dhcp does not register names in DNS)
+#   https://docs.microsoft.com/en-us/azure/virtual-network/virtual-networks-name-resolution-ddns
 # Inputs:
 #   ENABLE_DHCP_DNS_UPDATE:
 #     Category: RightScale
@@ -17,7 +19,7 @@
 # ...
 #
 
-# Quit if server is not using Azure DNS
+# Quit if DHCP nsupdate hook is not enabled
 if [ "$ENABLE_DHCP_DNS_UPDATE" != "true" ]; then
     echo "DHCP nsupdate hook is not enabled, exiting."
     exit 0
@@ -31,3 +33,5 @@ sudo cp "$RS_ATTACH_DIR/zz-nsupdate.sh" /etc/dhcp/dhclient-exit-hooks.d/
     echo "update add $(hostname -f) 900 a $(hostname -i)"
     echo "send"
 } | sudo nsupdate
+
+echo "DNS update completed"
