@@ -32,6 +32,6 @@ sudo cp "$RS_ATTACH_DIR/zz-nsupdate.sh" /etc/dhcp/dhclient-exit-hooks.d/
 {
     echo "update add $(hostname -f) 900 a $(hostname -i)"
     echo "send"
-} | sudo nsupdate
+} | sudo nsupdate -d
 
 echo "DNS update completed"
