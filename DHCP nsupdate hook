@@ -7,7 +7,7 @@
 #   https://docs.microsoft.com/en-us/azure/virtual-network/virtual-networks-name-resolution-ddns
 # Inputs:
 #   ENABLE_DHCP_DNS_UPDATE:
-#     Category: RightScale
+#     Category: Network
 #     Description: Whether to enable the DHCP hook
 #     Input Type: single
 #     Required: false
