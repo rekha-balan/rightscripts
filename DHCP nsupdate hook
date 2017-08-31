@@ -12,7 +12,7 @@
 #     Input Type: single
 #     Required: false
 #     Advanced: false
-#     Default: "text:true"
+#     Default: "text:false"
 #     Possible Values: ["text:true", "text:false"]
 # Attachments:
 # - zz-nsupdate.sh
