@@ -19,21 +19,21 @@
 #     Category: Azure Application Gateway
 #     Description: The resource group of the Application Gateway.
 #     Input Type: single
-#     Required: true
+#     Required: false
 #     Advanced: false
 #     Default:
 #   AZURE_APP_GATEWAY_NAME:
 #     Category: Azure Application Gateway
 #     Description: The name of the Application Gateway to register with.
 #     Input Type: single
-#     Required: true
+#     Required: false
 #     Advanced: false
 #     Default:
 #   AZURE_APP_GATEWAY_POOL_NAME:
 #     Category: Azure Application Gateway
 #     Description: Name of the Application Gateway backend pool.
 #     Input Type: single
-#     Required: true
+#     Required: false
 #     Advanced: false
 #     Default:
 #   AZURE_APP_GATEWAY_SERVER:
@@ -41,7 +41,7 @@
 #     Description: >
 #       An IP or resolvable hostname to add to the Application Gateway backend pool
 #     Input Type: single
-#     Required: true
+#     Required: false
 #     Advanced: false
 #     Default: "env:PRIVATE_IP"
 # ...
