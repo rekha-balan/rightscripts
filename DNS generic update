@@ -20,8 +20,8 @@
 #
 
 # Quit if DHCP nsupdate hook is not enabled
-if [ "$ENABLE_DHCP_DNS_UPDATE" != "true" ]; then
-    echo "DHCP nsupdate hook is not enabled, exiting."
+if [ "$DNS_UPDATE_ENABLE" != "true" ]; then
+    echo "DNS update is not enabled, exiting."
     exit 0
 fi
 
