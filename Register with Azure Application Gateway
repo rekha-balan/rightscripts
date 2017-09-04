@@ -40,10 +40,12 @@
 #     Category: Azure Application Gateway
 #     Description: >
 #       An IP or resolvable hostname to add to the Application Gateway backend pool
+#       This would normally be the private IP of the host
 #     Input Type: single
 #     Required: false
 #     Advanced: false
-#     Default: "env:PRIVATE_IP"
+#     Default:
+#     Possible Values: ["env:PRIVATE_IP", "env:PUBLIC_IP"]
 # ...
 
 if [ "$AZURE_APP_GATEWAY_REGISTER" != "true" ]; then
