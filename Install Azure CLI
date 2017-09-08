@@ -1,0 +1,78 @@
+#!/bin/bash -e
+
+#-------------------------------------------------------------------------------------
+# Functions
+#-------------------------------------------------------------------------------------
+
+function install_nodejs()
+{
+    if type node >/dev/null 2>&1; then
+        echo "Node is already installed...exitting"
+        return
+    fi
+
+    echo "Installing Node"
+    if type apt-get >/dev/null 2>&1; then
+        curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+        sudo apt-get install -y build-essential
+        echo "doing 1"
+    elif type yum >/dev/null 2>&1; then
+        curl --silent --location https://rpm.nodesource.com/setup_4.x | sudo -E bash -
+        sudo yum -y install nodejs
+        echo "doing 2"
+    fi
+}
+
+function install_azure_cli()
+{
+    if type azure >/dev/null 2>&1; then
+        echo "Azure cli is already installed...exitting"
+        return
+    fi
+
+    echo "Installing azure cli"
+    sudo npm install -g azure-cli@">=0.10.5"
+}
+
+function configure_azure_cli()
+{
+    mkdir -p ~/.azure
+    cat << EOF >> ~/.azure/telemetry.json
+{
+  "telemetry": false
+}
+EOF
+
+    if [ "$AZURE_CLI_SERVICE_PRINCIPAL" == "true" ];
+    then
+        azure_cli_options="$azure_cli_options --service-principal"
+    fi
+
+    if [ -n "$AZURE_CLI_TENANT" ];
+    then
+        azure_cli_options="$azure_cli_options --tenant $AZURE_CLI_TENANT"
+    fi
+
+    azure login -u "$AZURE_CLI_USERNAME" -p "$AZURE_CLI_PASSWORD" $azure_cli_options
+}
+
+
+#-------------------------------------------------------------------------------------
+# Main
+#-------------------------------------------------------------------------------------
+
+# Quit if install not requested
+: "${AZURE_CLI_INSTALL:=false}"
+
+if [ "$AZURE_CLI_INSTALL" == "false" ];
+then
+  echo "INSTALL_AZURE_CLI is false, exitting."
+  exit 0
+fi
+
+install_nodejs
+install_azure_cli
+configure_azure_cli
+
+echo 'Done.'
