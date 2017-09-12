@@ -29,7 +29,10 @@ fi
 sudo cp "$RS_ATTACH_DIR/zz-nsupdate.sh" /etc/dhcp/dhclient-exit-hooks.d/
 
 # Run a DNS update (because this script gets run after the initial DHCP run has happened)
+# This replaces the A record with the new IP address.  If we need to add an IP to an existing A record, this script
+# will need to have logic to allow it to be used in both scenarios (single IP or potential multiple IPs)
 {
+    echo "update delete $(hostname -f) a"
     echo "update add $(hostname -f) 900 a $(hostname -i)"
     echo "send"
 } | sudo nsupdate -d
