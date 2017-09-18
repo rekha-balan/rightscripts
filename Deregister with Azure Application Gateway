@@ -88,6 +88,7 @@ azure network application-gateway address-pool set \
       --resource-group "$AZURE_APP_GATEWAY_RESOURCE_GROUP" \
       --gateway-name "$AZURE_APP_GATEWAY_NAME" \
       --name "$AZURE_APP_GATEWAY_POOL_NAME" \
-      --servers "${new_pool}"
+      --servers "${new_pool}" \
+      --nowait
 
 echo 'Done.'
