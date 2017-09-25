@@ -53,21 +53,12 @@ if [ "$AZURE_APP_GATEWAY_REGISTER" != "true" ]; then
   exit 0
 fi
 
-# if jq is not installed, lets install the linux binary
-if ! type jq > /dev/null 2>&1; then
-  echo 'Installing jq...'
-  source /etc/profile.d/*proxy* > /dev/null 2>&1 || true
-  curl -SsLk "https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64" | sudo tee /usr/local/bin/jq > /dev/null 2>&1
-  sudo chmod +x /usr/local/bin/jq
-  /usr/local/bin/jq --version
-fi
-
-out=$(azure network application-gateway address-pool show --json \
-            --resource-group "$AZURE_APP_GATEWAY_RESOURCE_GROUP" \
-            --gateway-name "$AZURE_APP_GATEWAY_NAME" \
-            --name "$AZURE_APP_GATEWAY_POOL_NAME")
-
-current_pool=$(echo $out | jq -r '.backendAddresses | map(.ipAddress) | join(",")')
+current_pool=$(az network application-gateway address-pool show \
+                     --resource-group "$AZURE_APP_GATEWAY_RESOURCE_GROUP" \
+                     --gateway-name "$AZURE_APP_GATEWAY_NAME" \
+                     --name "$AZURE_APP_GATEWAY_POOL_NAME" \
+                     --output tsv \
+                     --query "join(' ',backendAddresses[].ipAddress)")
 
 echo "Current backend pool: $current_pool"
 echo "AZURE_APP_GATEWAY_SERVER: $AZURE_APP_GATEWAY_SERVER"
@@ -75,10 +66,13 @@ echo "AZURE_APP_GATEWAY_SERVER: $AZURE_APP_GATEWAY_SERVER"
 # Check if our server is already in the pool
 echo $current_pool | egrep -q "\b${AZURE_APP_GATEWAY_SERVER}\b" && echo "'$AZURE_APP_GATEWAY_SERVER' is already in backend pool" && exit 0
 
-azure network application-gateway address-pool set \
+echo echo "New backend pool: ${current_pool} ${AZURE_APP_GATEWAY_SERVER}"
+
+az network application-gateway address-pool update \
       --resource-group "$AZURE_APP_GATEWAY_RESOURCE_GROUP" \
       --gateway-name "$AZURE_APP_GATEWAY_NAME" \
       --name "$AZURE_APP_GATEWAY_POOL_NAME" \
-      --servers "${current_pool},${AZURE_APP_GATEWAY_SERVER}"
+      --no-wait \
+      --servers ${current_pool} ${AZURE_APP_GATEWAY_SERVER}
 
 echo 'Done.'

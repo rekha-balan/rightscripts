@@ -1,0 +1,104 @@
+#! /bin/sh -e
+# ---
+# RightScript Name: Install Azure CLI 2
+# Description: >
+#   Installs version 2 of the Azure CLI and logs in so further az commands can work
+# Inputs:
+#   AZURE_CLI2_INSTALL:
+#     Category: Azure
+#     Description: Whether to install the version 2 of the Azure CLI
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default: "text:false"
+#     Possible Values: ["text:true", "text:false"]
+#   AZURE_CLI_PASSWORD:
+#     Category: Azure
+#     Description: The password for Azure CLI.
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+#   AZURE_CLI_USERNAME:
+#     Category: Azure
+#     Description: The username for Azure CLI
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+#   AZURE_CLI_SERVICE_PRINCIPAL:
+#     Category: Azure
+#     Description: Set to true if logging in to the Azure CLI using a service principal.
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default: "text:false"
+#     Possible Values: ["text:true", "text:false"]
+#   AZURE_CLI_TENANT:
+#     Category: Azure
+#     Description: This is required if using a service principal for Azure CLI login. Set to the tenant ID.
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+#   AZURE_ACCOUNT:
+#     Category: Azure
+#     Description: Name or ID of the Azure account - only needed if you need to switch accounts and it's not the default account for the login"
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+# ...
+
+
+# Quit if install not requested
+if [ "$AZURE_CLI2_INSTALL" != "true" ];
+then
+  echo "AZURE_CLI2_INSTALL is false, exiting."
+  exit 0
+fi
+
+. "$RS_ATTACH_DIR/rs_distro.sh"
+
+# package installation
+case $RS_DISTRO in
+  debian|ubuntu)
+    if ! grep -q 'https://packages.microsoft.com/repos/azure-cli/' /etc/apt/sources.list.d/azure-cli.list; then
+      echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ wheezy main" | sudo tee /etc/apt/sources.list.d/azure-cli.list
+    fi
+
+    sudo apt-key adv --keyserver packages.microsoft.com --recv-keys 417A0893
+    sudo apt-get install apt-transport-https
+    sudo apt-get update && sudo apt-get install azure-cli
+    ;;
+  centos|redhat|redhatenterpriseserver)
+    if ! grep -q 'https://packages.microsoft.com/yumrepos/azure-cli' /etc/yum.repos.d/azure-cli.repo; then
+      sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+      sudo sh -c 'echo -e "[azure-cli]\nname=Azure CLI\nbaseurl=https://packages.microsoft.com/yumrepos/azure-cli\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azure-cli.repo'
+    fi
+
+    sudo yum check-update
+    sudo yum install azure-cli
+    ;;
+  *)
+    echo "distro '$RS_DISTRO' not supported, exiting."
+    exit 1
+    ;;
+esac
+
+if [ "$AZURE_CLI_SERVICE_PRINCIPAL" = "true" ]; then
+  azure_cli_options="$azure_cli_options --service-principal"
+fi
+
+if [ -n "$AZURE_CLI_TENANT" ]; then
+  azure_cli_options="$azure_cli_options --tenant $AZURE_CLI_TENANT"
+fi
+
+# Login
+az login -u "$AZURE_CLI_USERNAME" -p "$AZURE_CLI_PASSWORD" $azure_cli_options
+
+# Switch accounts if we need to
+if [ -n "$AZURE_ACCOUNT" ]; then
+  az account set -s "$AZURE_ACCOUNT"
+fi
+echo end
