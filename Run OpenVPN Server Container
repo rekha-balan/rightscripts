@@ -1,0 +1,179 @@
+#! /bin/bash -e
+# ---
+# RightScript Name: Run OpenVPN Server Docker Container
+# Description: >
+#   Runs an OpenVPN container
+#   Listens on UDP
+# Inputs:
+#   OPENVPN_DOCKER_CONTAINER_NAME:
+#     Category: OpenVPN
+#     Description: OpenVPN container name
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+#   OPENVPN_DOCKER_TENANT_ID:
+#     Category: OpenVPN
+#     Description: OpenVPN Azure Tenant ID - required for Azure AD authentication
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+#   OPENVPN_DOCKER_CLIENT_ID:
+#     Category: OpenVPN
+#     Description: OpenVPN Azure Application Registration ID - required for Azure AD authentication
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+#   OPENVPN_DOCKER_RESTART_POLICY:
+#     Category: OpenVPN
+#     Description: OpenVPN container restart policy
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default: "text:unless-stopped"
+#   OPENVPN_DOCKER_HOST_NAME:
+#     Category: OpenVPN
+#     Description: OpenVPN remote name/IP (name/IP of the host that clients will connect to)
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+#   OPENVPN_DOCKER_HOST_PORT:
+#     Category: OpenVPN
+#     Description: OpenVPN container listen port
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default: "text:1194"
+#   OPENVPN_DOCKER_IMAGE:
+#     Category: OpenVPN
+#     Description: OpenVPN docker image
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default: "text:flaccid/openvpn"
+#   OPENVPN_DOCKER_IMAGE_TAG:
+#     Category: OpenVPN
+#     Description: OpenVPN docker image tag (azure-ad to authenticate against azure)
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default: "text:azure-ad"
+#   OPENVPN_DOCKER_NAT_ENABLE:
+#     Category: OpenVPN
+#     Description: OpenVPN Network Address Translation (true to enable NAT)
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default: "text:false"
+#     Possible Values: ["text:true", "text:false"]
+#   OPENVPN_DOCKER_ENABLE:
+#     Category: OpenVPN
+#     Description: Set to true to enable running OpenVPN docker
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default: "text:false"
+#     Possible Values: ["text:true", "text:false"]
+#   OPENVPN_DOCKER_DEBUG:
+#     Category: OpenVPN
+#     Description: OpenVPN docker image tag
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default: "text:false"
+#     Possible Values: ["text:true", "text:false"]
+#   OPENVPN_DOCKER_PRINT_CLIENT_PROFILE:
+#     Category: OpenVPN
+#     Description: OpenVPN print client profile in log
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default: "text:false"
+#     Possible Values: ["text:true", "text:false"]
+#   OPENVPN_DOCKER_CA_CERTIFICATE:
+#     Category: OpenVPN
+#     Description: OpenVPN CA Certificate
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+#   OPENVPN_DOCKER_CA_KEY:
+#     Category: OpenVPN
+#     Description: OpenVPN CA Key
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+#   OPENVPN_DOCKER_DH_PARAMS:
+#     Category: OpenVPN
+#     Description: OpenVPN DH Params Key
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+#   OPENVPN_DOCKER_PUSH_ROUTES:
+#     Category: OpenVPN
+#     Description: OpenVPN push routes (comma separated IP+netmask list, ie "10.0.0.0 255.255.0.0,10.1.0.0 255.255.0.0")
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+#   OPENVPN_DOCKER_EXTRA_OPTS:
+#     Category: OpenVPN
+#     Description: OpenVPN extra parameters that might be required
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+# ...
+
+: "${OPENVPN_DOCKER_CONTAINER_NAME:=openvpn}"
+: "${OPENVPN_DOCKER_IMAGE:=flaccid/openvpn}"
+: "${OPENVPN_DOCKER_IMAGE_TAG:=azure-ad}"
+: "${OPENVPN_DOCKER_HOST_NAME:=127.0.0.1}"
+: "${OPENVPN_DOCKER_HOST_PORT:=1194}"
+: "${OPENVPN_DOCKER_RESTART_POLICY:=unless-stopped}"
+: "${OPENVPN_DOCKER_DEBUG:=false}"
+: "${OPENVPN_DOCKER_PRINT_CLIENT_PROFILE:=true}"
+: "${OPENVPN_DOCKER_NAT_ENABLE:=true}"
+
+# Quit if not enabled
+if [ "$OPENVPN_DOCKER_ENABLE" != "true" ];
+then
+  echo "OPENVPN_DOCKER_ENABLE is not set to true, exiting."
+  exit 0
+fi
+
+echo 'Running OpenVPN container'
+# sudo is being used because new groups are not being picked up with some images
+
+if ! sudo docker ps -a | tail -n +2 | awk -F " " '{print $NF}' | grep "$OPENVPN_DOCKER_CONTAINER_NAME" > /dev/null 2>&1; then
+  set -x
+  container_id=$(sudo -E docker run -d --restart="$OPENVPN_DOCKER_RESTART_POLICY" --name "$OPENVPN_DOCKER_CONTAINER_NAME" \
+    --privileged -p $OPENVPN_DOCKER_HOST_PORT:1194/udp \
+    -e REMOTE_HOST="$OPENVPN_DOCKER_HOST_NAME" \
+    -e REMOTE_PORT="$OPENVPN_DOCKER_HOST_PORT" \
+    -e PRINT_CLIENT_PROFILE="$OPENVPN_DOCKER_PRINT_CLIENT_PROFILE" \
+    -e DEBUG="$OPENVPN_DOCKER_DEBUG" \
+    -e TENANT_ID="$OPENVPN_DOCKER_TENANT_ID" \
+    -e CLIENT_ID="$OPENVPN_DOCKER_CLIENT_ID" \
+    -e NAT_ENABLE="$OPENVPN_DOCKER_NAT_ENABLE" \
+    -e CA_CERTIFICATE="$OPENVPN_DOCKER_CA_CERTIFICATE" \
+    -e CA_KEY="$OPENVPN_DOCKER_CA_KEY" \
+    -e DH_PARAMS="$OPENVPN_DOCKER_DH_PARAMS" \
+    -e PUSH_ROUTES="$OPENVPN_DOCKER_PUSH_ROUTES" \
+    $OPENVPN_DOCKER_EXTRA_OPTS \
+    "$OPENVPN_DOCKER_IMAGE":"$OPENVPN_DOCKER_IMAGE_TAG")
+
+  { set +x; } 2>/dev/null
+  sleep 5
+  echo 'Container log after 5 seconds of runtime:'
+  sudo docker logs "$container_id"
+else
+  echo 'Container is already running, skipping.'
+fi
+
+echo 'Done.'
