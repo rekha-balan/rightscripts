@@ -1,0 +1,56 @@
+#!/bin/bash -e
+
+# ---
+# RightScript Name: DNS generic add
+# Description: >
+#   Uses nsupdate to add an entry to DNS for the machine's hostname
+#   The IP can also be added to other optional DNS entries
+# Inputs:
+#   DNS_UPDATE_ENABLE:
+#     Category: Network
+#     Description: Whether to enable the generic DNS updater
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default: "text:false"
+#     Possible Values: ["text:true", "text:false"]
+#   DNS_UPDATE_EXTRA_DOMAINS:
+#     Category: Network
+#     Description: Optional extra domains to update (comma separated)
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+# ...
+#
+
+# Quit if DHCP nsupdate hook is not enabled
+if [ "$DNS_UPDATE_ENABLE" != "true" ]; then
+    echo "DNS update is not enabled, exiting."
+    exit 0
+fi
+
+ip=$(hostname -i)
+name=$(hostname -f)
+IFS=',' read -ra domains <<< "$DNS_UPDATE_EXTRA_DOMAINS"
+
+echo ">> IP is $ip"
+echo ">> Domains are: $name ${domains[@]}"
+
+# For our hostname, delete any old IPs and add our own
+echo ">> Clearing and adding $ip to $name"
+{
+    echo "update delete $name A"
+    echo "update add $name 900 A $ip"
+    echo "send"
+} | sudo nsupdate -d
+
+for domain in ${domains[@]}; do
+  echo ">> Adding $ip to $domain"
+  {
+    echo "update add $domain 900 A $ip"
+    echo "send"
+  } | sudo nsupdate -d
+done
+
+echo ">> DNS update completed"
