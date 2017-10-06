@@ -12,20 +12,6 @@
 #     Required: false
 #     Advanced: false
 #     Default:
-#   OPENVPN_DOCKER_TENANT_ID:
-#     Category: OpenVPN
-#     Description: OpenVPN Azure Tenant ID - required for Azure AD authentication
-#     Input Type: single
-#     Required: false
-#     Advanced: false
-#     Default:
-#   OPENVPN_DOCKER_CLIENT_ID:
-#     Category: OpenVPN
-#     Description: OpenVPN Azure Application Registration ID - required for Azure AD authentication
-#     Input Type: single
-#     Required: false
-#     Advanced: false
-#     Default:
 #   OPENVPN_DOCKER_RESTART_POLICY:
 #     Category: OpenVPN
 #     Description: OpenVPN container restart policy
@@ -114,9 +100,59 @@
 #     Required: false
 #     Advanced: false
 #     Default:
-#   OPENVPN_DOCKER_PUSH_ROUTES:
+#   OPENVPN_DOCKER_PUSH_OPTIONS:
 #     Category: OpenVPN
-#     Description: OpenVPN push routes (comma separated IP+netmask list, ie "10.0.0.0 255.255.0.0,10.1.0.0 255.255.0.0")
+#     Description: OpenVPN push options (comma separated list, ie "route 10.0.0.0 255.255.0.0,route 10.1.0.0 255.255.0.0,dhcp-option DNS 10.0.0.1")
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+#   OPENVPN_DOCKER_AUTH_TYPE:
+#     Category: OpenVPN
+#     Description: Authentication type (adcheck queries LDAP, azuread, queries Azure AD)
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Possible Values: ["text:none", "text:adcheck", "text:azuread"]
+#     Default: "text:none"
+#   OPENVPN_DOCKER_AUTH_AZUREAD_TENANT_ID:
+#     Category: OpenVPN
+#     Description: OpenVPN Azure Tenant ID - required for Azure AD authentication
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+#   OPENVPN_DOCKER_AUTH_AZUREAD_CLIENT_ID:
+#     Category: OpenVPN
+#     Description: OpenVPN Azure Application Registration ID - required for Azure AD authentication
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+#   OPENVPN_DOCKER_AUTH_AZUREAD_GROUPS:
+#     Category: OpenVPN
+#     Description: List of groups that a user needs to be a member of to be authenticated, used for azuread auth (comma separted.  If blank, no check is done)
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+#   OPENVPN_DOCKER_AUTH_ADCHECK_SERVER:
+#     Category: OpenVPN
+#     Description: The AD Server to authenticate against when using adcheck auth type
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+#   OPENVPN_DOCKER_AUTH_ADCHECK_DOMAIN:
+#     Category: OpenVPN
+#     Description: The AD Domain to authenticate against when using adcheck auth type
+#     Input Type: single
+#     Required: false
+#     Advanced: false
+#     Default:
+#   OPENVPN_DOCKER_AUTH_ADCHECK_GROUPDN:
+#     Category: OpenVPN
+#     Description: The LDAP group to check membership of (required for adcheck auth type)
 #     Input Type: single
 #     Required: false
 #     Advanced: false
@@ -139,6 +175,7 @@
 : "${OPENVPN_DOCKER_DEBUG:=false}"
 : "${OPENVPN_DOCKER_PRINT_CLIENT_PROFILE:=true}"
 : "${OPENVPN_DOCKER_NAT_ENABLE:=true}"
+: "${OPENVPN_DOCKER_AUTH_TYPE:=none}"
 
 # Quit if not enabled
 if [ "$OPENVPN_DOCKER_ENABLE" != "true" ];
@@ -158,13 +195,18 @@ if ! sudo docker ps -a | tail -n +2 | awk -F " " '{print $NF}' | grep "$OPENVPN_
     -e REMOTE_PORT="$OPENVPN_DOCKER_HOST_PORT" \
     -e PRINT_CLIENT_PROFILE="$OPENVPN_DOCKER_PRINT_CLIENT_PROFILE" \
     -e DEBUG="$OPENVPN_DOCKER_DEBUG" \
-    -e TENANT_ID="$OPENVPN_DOCKER_TENANT_ID" \
-    -e CLIENT_ID="$OPENVPN_DOCKER_CLIENT_ID" \
     -e NAT_ENABLE="$OPENVPN_DOCKER_NAT_ENABLE" \
     -e CA_CERTIFICATE="$OPENVPN_DOCKER_CA_CERTIFICATE" \
     -e CA_KEY="$OPENVPN_DOCKER_CA_KEY" \
     -e DH_PARAMS="$OPENVPN_DOCKER_DH_PARAMS" \
-    -e PUSH_ROUTES="$OPENVPN_DOCKER_PUSH_ROUTES" \
+    -e PUSH_OPTIONS="$OPENVPN_DOCKER_PUSH_OPTIONS" \
+    -e AUTH_TYPE="$OPENVPN_DOCKER_AUTH_TYPE" \
+    -e AZUREAD_TENANT_ID="$OPENVPN_DOCKER_AUTH_AZUREAD_TENANT_ID" \
+    -e AZUREAD_CLIENT_ID="$OPENVPN_DOCKER_AUTH_AZUREAD_CLIENT_ID" \
+    -e AZUREAD_GROUPS="$OPENVPN_DOCKER_AUTH_GROUPS" \
+    -e ADCHECK_SERVER="$OPENVPN_DOCKER_AUTH_ADCHECK_SERVER" \
+    -e ADCHECK_DOMAIN="$OPENVPN_DOCKER_AUTH_ADCHECK_DOMAIN" \
+    -e ADCHECK_GROUPDN="$OPENVPN_DOCKER_AUTH_ADCHECK_GROUPDN" \
     $OPENVPN_DOCKER_EXTRA_OPTS \
     "$OPENVPN_DOCKER_IMAGE":"$OPENVPN_DOCKER_IMAGE_TAG")
 
